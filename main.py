@@ -13,7 +13,7 @@ from telegram.ext import (
 import yt_dlp
 import lyricsgenius
 
-TELEGRAM_BOT_TOKEN = "7619265642:AAG0ZdY94aNea2f4RLcy2Ubmw6qzgVx5dXQ"
+TELEGRAM_BOT_TOKEN = "7619265642:AAHlSqYfP9TeOYJXi8OX7M4kMSOVl7i4044"
 GENIUS_ACCESS_TOKEN = "5j1P1reu89Ii5lr94MBbrZwlVyTqQ3d8SEp3L6kdDm8E_ZbWUHFnjL7LNRNoTZmf"
 
 FFMPEG_PATH = "ffmpeg"  # для Railway / Linux
