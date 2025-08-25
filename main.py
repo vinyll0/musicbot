@@ -58,8 +58,8 @@ async def handle_song_request(update: Update, context: ContextTypes.DEFAULT_TYPE
     message = await update.message.reply_text("🔎 Ищу песню... Пожалуйста, подождите.")
 
     try:
-        ydl_opts = {'format': 'bestaudio/best', 'noplaylist': True, 'quiet': True, 'extract_flat': True}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        download_and = {'format': 'bestaudio/best', 'noplaylist': True, 'quiet': True, 'extract_flat': True}
+        with yt_dlp.YoutubeDL(download_and_send) as ydl:
             search_query = f"ytsearch5:{query}"
             info = ydl.extract_info(search_query, download=False)
 
@@ -123,14 +123,20 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
 
 async def download_and_send_song(chat_id: int, video_id: str, context: ContextTypes.DEFAULT_TYPE, message_to_edit) -> None:
-    """Скачивает песню, отправляет ее с кнопкой 'Показать текст'."""
+    """Скачивает песню с YouTube, конвертирует в mp3 и отправляет с кнопкой 'Показать текст'."""
     downloaded_file_path = ""
     try:
         ydl_opts = {
-            'ffmpeg_location': FFMPEG_PATH, 'format': 'bestaudio/best',
-            'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}],
+            'ffmpeg_location': "ffmpeg",  # для Railway / Linux
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192'
+            }],
             'outtmpl': os.path.join(DOWNLOAD_DIR, f'{chat_id}_{video_id}.%(ext)s'),
-            'noplaylist': True, 'quiet': True,
+            'noplaylist': True,
+            'quiet': True,
         }
         
         video_url = f"https://www.youtube.com/watch?v={video_id}"
@@ -148,7 +154,8 @@ async def download_and_send_song(chat_id: int, video_id: str, context: ContextTy
 
         with open(downloaded_file_path, 'rb') as audio_file:
             await context.bot.send_audio(
-                chat_id=chat_id, audio=audio_file,
+                chat_id=chat_id,
+                audio=audio_file,
                 title=info_dict.get('title', 'Без названия'),
                 performer=info_dict.get('uploader', 'Неизвестный исполнитель'),
                 duration=info_dict.get('duration', 0),
