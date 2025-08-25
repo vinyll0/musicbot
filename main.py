@@ -19,7 +19,7 @@ TELEGRAM_BOT_TOKEN = "7619265642:AAGZK_PXa1cW8rp-NFZHKYmE1evpgeqXxPI"
 
 GENIUS_ACCESS_TOKEN = "5j1P1reu89Ii5lr94MBbrZwlVyTqQ3d8SEp3L6kdDm8E_ZbWUHFnjL7LNRNoTZmf"
 
-FFMPEG_PATH = r"C:\Users\vinil\OneDrive\Рабочий стол\ffmpeg-2025-06-04-git-a4c1a5b084-essentials_build\bin\ffmpeg.exe"
+FFMPEG_PATH = "ffmpeg"
 
 DOWNLOAD_DIR = 'downloads'
 
