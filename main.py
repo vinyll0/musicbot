@@ -1,6 +1,5 @@
 import logging
 import os
-import asyncio
 import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -14,21 +13,20 @@ from telegram.ext import (
 import yt_dlp
 import lyricsgenius
 
-
 TELEGRAM_BOT_TOKEN = "7619265642:AAG0ZdY94aNea2f4RLcy2Ubmw6qzgVx5dXQ"
-
 GENIUS_ACCESS_TOKEN = "5j1P1reu89Ii5lr94MBbrZwlVyTqQ3d8SEp3L6kdDm8E_ZbWUHFnjL7LNRNoTZmf"
 
-FFMPEG_PATH = "ffmpeg"
-
-DOWNLOAD_DIR = 'downloads'
+FFMPEG_PATH = "ffmpeg"  # для Railway / Linux
+DOWNLOAD_DIR = "downloads"
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
 genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, verbose=False, remove_section_headers=True)
+
 
 def find_lyrics(song_title, artist):
     """Ищет текст песни на Genius.com."""
@@ -44,22 +42,21 @@ def find_lyrics(song_title, artist):
         return None
 
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Отправляет приветственное сообщение."""
     user = update.effective_user
     await update.message.reply_html(
-        f"Привет, {user.mention_html()}! 👋\n\nОтправь мне название песни, и я найду ее для тебя, а также смогу показать ее текст!",
+        f"Привет, {user.mention_html()}! 👋\n\n"
+        "Отправь мне название песни, и я найду её для тебя, а также смогу показать её текст!"
     )
 
+
 async def handle_song_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Ищет несколько вариантов песни и предлагает выбрать."""
     query = update.message.text
     message = await update.message.reply_text("🔎 Ищу песню... Пожалуйста, подождите.")
 
     try:
-        download_and = {'format': 'bestaudio/best', 'noplaylist': True, 'quiet': True, 'extract_flat': True}
-        with yt_dlp.YoutubeDL(download_and_send) as ydl:
+        ydl_opts = {'format': 'bestaudio/best', 'noplaylist': True, 'quiet': True, 'extract_flat': True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             search_query = f"ytsearch5:{query}"
             info = ydl.extract_info(search_query, download=False)
 
@@ -70,7 +67,7 @@ async def handle_song_request(update: Update, context: ContextTypes.DEFAULT_TYPE
             keyboard = []
             if 'search_results' not in context.chat_data:
                 context.chat_data['search_results'] = {}
-            
+
             for item in info['entries']:
                 video_id = item['id']
                 title = item.get('title', 'Без названия')
@@ -78,7 +75,7 @@ async def handle_song_request(update: Update, context: ContextTypes.DEFAULT_TYPE
                     'title': title,
                     'artist': item.get('uploader', '')
                 }
-                
+
                 button_title = title[:50] + "..." if len(title) > 50 else title
                 keyboard.append([InlineKeyboardButton(button_title, callback_data=f"dl_{video_id}")])
 
@@ -91,7 +88,6 @@ async def handle_song_request(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Обрабатывает нажатия на inline-кнопки (скачивание или запрос текста)."""
     query = update.callback_query
     await query.answer()
 
@@ -101,20 +97,19 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         chat_id = query.message.chat_id
         await query.message.edit_text("⏳ Скачиваю выбранный трек...")
         await download_and_send_song(chat_id, data, context, query.message)
-    
+
     elif action == 'lyrics':
         video_id = data
         song_info = context.chat_data.get('search_results', {}).get(video_id)
-        
+
         if not song_info:
             await query.message.reply_text("Не удалось найти информацию о песне для поиска текста. Попробуйте найти песню заново.")
             return
 
         await query.edit_message_reply_markup(None)
         await query.answer("Ищу текст песни...")
-        
+
         lyrics = find_lyrics(song_info['title'], song_info['artist'])
-        
         if lyrics:
             for i in range(0, len(lyrics), 4096):
                 await query.message.reply_text(lyrics[i:i + 4096])
@@ -127,7 +122,7 @@ async def download_and_send_song(chat_id: int, video_id: str, context: ContextTy
     downloaded_file_path = ""
     try:
         ydl_opts = {
-            'ffmpeg_location': "ffmpeg",  # для Railway / Linux
+            'ffmpeg_location': FFMPEG_PATH,
             'format': 'bestaudio/best',
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
@@ -138,7 +133,7 @@ async def download_and_send_song(chat_id: int, video_id: str, context: ContextTy
             'noplaylist': True,
             'quiet': True,
         }
-        
+
         video_url = f"https://www.youtube.com/watch?v={video_id}"
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(video_url, download=True)
@@ -161,25 +156,23 @@ async def download_and_send_song(chat_id: int, video_id: str, context: ContextTy
                 duration=info_dict.get('duration', 0),
                 reply_markup=reply_markup
             )
-        
+
         await message_to_edit.delete()
 
     except Exception as e:
         logger.error(f"Ошибка при скачивании/отправке (ID: {video_id}): {e}")
         await message_to_edit.edit_text("😥 Произошла ошибка. Не удалось скачать трек.")
-    
+
     finally:
         if downloaded_file_path and os.path.exists(downloaded_file_path):
             os.remove(downloaded_file_path)
 
 
 def main() -> None:
-    """Запуск бота."""
     if not os.path.exists(DOWNLOAD_DIR):
         os.makedirs(DOWNLOAD_DIR)
-        
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     application.add_handler(CommandHandler("stpart", start))
     application.add_handler(CallbackQueryHandler(button_callback_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_song_request))
